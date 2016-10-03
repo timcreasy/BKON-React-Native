@@ -12,6 +12,8 @@ To build a React Native application, the React Native command line interface mus
 
 To use the BKON Mobile SDK, sign up for an account at [PHY.net](https://www.phy.net/).
 
+The completed code for this project can be found [here](https://github.com/timcreasy/BKON_Museum).
+
 #### Set Up
 For the purposes of this guide, we will narrow our focus to an iOS application with React Native. This guide assumes a basic working knowledge of React Native, a detailed getting started guide can be found [here](https://facebook.github.io/react-native/docs/getting-started.html). Although there are many use cases for beacon technology, a Museum application will demonstrate the interactivity with the BKON SDK.  Our users will have a Museum application, which displays all exhibits nearby, as broadcast by a BKON A1.
 
@@ -269,4 +271,82 @@ componentDidMount() {
   }, 4000);
 }
 ```
+NOTE: the 'refreshing' property on state defines when a pull-to-refresh has occured or is in progress
 
+While we are at it, we want to ensure any scanning is stopped before our main component unmounts.  This can be added to the componentWillUnmount lifecycle method:
+```jsx
+componentWillUnmount() {
+  PhyBridge.stopScanningForBeacons();
+}
+```
+
+Next, let's define a method to be called when a pull-to-refresh has occured:
+```jsx
+scanForBeacons() {
+  // If no current refresh is in progress
+  if (!this.state.refreshing) {
+    // Set refreshing to be true, stop any current scanning, and start new scan
+    this.setState({refreshing: true});
+    PhyBridge.stopScanningForBeacons();
+    PhyBridge.startScanningForBeacons();
+    // After 4 seconds, reset refreshing to false, stop scan, and set beacons array to be equal to the tempBeaconList array
+    setTimeout(() => {
+      this.setState({refreshing: false});
+      PhyBridge.stopScanningForBeacons()
+      this.setState({beacons: this.state.tempBeaconList});
+    }, 4000);
+  }
+}
+```
+
+Lastly, let's update our components render method to incorporate the pull-to-refresh functionality, as well as a method to loop through the array stored at this.state.beacons and crete a formatted card component for each beacon within proximity.  The code is as follows:
+```jsx
+render() {
+  return (
+  <View style={styles.container}>
+    <ParallaxView
+      backgroundSource={require('./imgs/museum.jpg')}
+      windowHeight={300}
+      refreshControl={
+        <RefreshControl
+          refreshing={this.state.refreshing}
+          onRefresh={this.scanForBeacons}
+        />
+      } >
+      <View style={styles.exhibitsContainer}>
+        <Text style={styles.exhibitsHeader}>Exhibits Near You</Text>
+          {
+            this.state.beacons.map((beacon, index) => {
+              const favicon = beacon.faviconUrl;
+              return (
+                <Card key={index}>
+                  <CardItem>
+                    <Thumbnail source={{uri: favicon}} />
+                    <Text>{beacon.title}</Text>
+                  </CardItem>
+                  <CardItem cardBody>
+                    <Text>{beacon.desc}</Text>
+                  </CardItem>
+                </Card>
+              );
+            })
+          }
+        </View>
+      </ParallaxView>
+    </View>
+  );
+}
+```
+
+That's it! In just a short amount of time, we have created a mobile appliation which can communicate with the powerful mobile SDK provided by BKON and interface with the Physical Web.
+
+The completed code for this project can be found [here](https://github.com/timcreasy/BKON_Museum).
+
+#### Related Links
+- [BKON]()
+- [React Native](https://facebook.github.io/react-native/)
+- [NativeBase](http://nativebase.io/)
+- [react-native-parallax-view](https://github.com/lelandrichardson/react-native-parallax-view)
+
+#### About The Author
+Tim Creasy is a current student at [Nashville Software School](http://nashvillesoftwareschool.com/).  Specializing in MEAN stack development, he has an increasing interest in mobile application development.  His contact info can be found [here](http://timcreasy.com/), or he can be reached on [LinkedIn](https://www.linkedin.com/in/tim-creasy).
